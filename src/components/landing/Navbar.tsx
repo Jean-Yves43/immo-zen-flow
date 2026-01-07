@@ -35,15 +35,25 @@ export const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="text-muted-foreground hover:text-foreground transition-colors duration-200 font-medium"
-              >
-                {item.label}
-              </a>
-            ))}
+            {navItems.map((item) =>
+              item.href.startsWith("/") ? (
+                <Link
+                  key={item.label}
+                  to={item.href}
+                  className="text-muted-foreground hover:text-foreground transition-colors duration-200 font-medium"
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className="text-muted-foreground hover:text-foreground transition-colors duration-200 font-medium"
+                >
+                  {item.label}
+                </a>
+              ),
+            )}
           </div>
 
           {/* CTA Buttons */}
@@ -73,16 +83,27 @@ export const Navbar = () => {
         {mobileMenuOpen && (
           <div className="md:hidden mt-4 pb-4 border-t border-border pt-4 animate-fade-up">
             <div className="flex flex-col gap-4">
-              {navItems.map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className="text-muted-foreground hover:text-foreground transition-colors duration-200 font-medium py-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {item.label}
-                </a>
-              ))}
+              {navItems.map((item) =>
+                item.href.startsWith("/") ? (
+                  <Link
+                    key={item.label}
+                    to={item.href}
+                    className="text-muted-foreground hover:text-foreground transition-colors duration-200 font-medium py-2"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                ) : (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    className="text-muted-foreground hover:text-foreground transition-colors duration-200 font-medium py-2"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {item.label}
+                  </a>
+                ),
+              )}
               <div className="flex flex-col gap-2 pt-4 border-t border-border">
                 <Button variant="ghost" className="w-full justify-center font-medium" onClick={() => openAuthDialog("login")}>
                   Se connecter
