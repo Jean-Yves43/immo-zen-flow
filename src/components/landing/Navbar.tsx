@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Building2, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { AuthDialog } from "@/components/auth/AuthDialog";
 
 const navItems = [
   { label: "Louer", href: "/louer" },
@@ -12,6 +13,13 @@ const navItems = [
 
 export const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [authDefaultTab, setAuthDefaultTab] = useState<"login" | "signup">("login");
+
+  const openAuthDialog = (tab: "login" | "signup") => {
+    setAuthDefaultTab(tab);
+    setAuthDialogOpen(true);
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass-card">
@@ -40,10 +48,10 @@ export const Navbar = () => {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" className="font-medium">
+            <Button variant="ghost" className="font-medium" onClick={() => openAuthDialog("login")}>
               Se connecter
             </Button>
-            <Button variant="primary" className="font-medium shadow-soft">
+            <Button variant="primary" className="font-medium shadow-soft" onClick={() => openAuthDialog("signup")}>
               Créer un compte
             </Button>
           </div>
@@ -76,10 +84,10 @@ export const Navbar = () => {
                 </a>
               ))}
               <div className="flex flex-col gap-2 pt-4 border-t border-border">
-                <Button variant="ghost" className="w-full justify-center font-medium">
+                <Button variant="ghost" className="w-full justify-center font-medium" onClick={() => openAuthDialog("login")}>
                   Se connecter
                 </Button>
-                <Button variant="primary" className="w-full justify-center font-medium">
+                <Button variant="primary" className="w-full justify-center font-medium" onClick={() => openAuthDialog("signup")}>
                   Créer un compte
                 </Button>
               </div>
@@ -87,6 +95,12 @@ export const Navbar = () => {
           </div>
         )}
       </nav>
+
+      <AuthDialog
+        open={authDialogOpen}
+        onOpenChange={setAuthDialogOpen}
+        defaultTab={authDefaultTab}
+      />
     </header>
   );
 };
