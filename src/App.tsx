@@ -18,6 +18,16 @@ import TenantMaintenance from "./pages/tenant/TenantMaintenance";
 import TenantNotifications from "./pages/tenant/TenantNotifications";
 import TenantProfil from "./pages/tenant/TenantProfil";
 
+// Admin pages
+import { AdminLayout } from "./layouts/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminProperties from "./pages/admin/AdminProperties";
+import AdminManagersOverview from "./pages/admin/AdminManagersOverview";
+import AdminStatistics from "./pages/admin/AdminStatistics";
+import AdminNotifications from "./pages/admin/AdminNotifications";
+import AdminSettings from "./pages/admin/AdminSettings";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -40,6 +50,19 @@ const App = () => (
             <Route path="maintenance" element={<TenantMaintenance />} />
             <Route path="notifications" element={<TenantNotifications />} />
             <Route path="profil" element={<TenantProfil />} />
+          </Route>
+
+          {/* Admin Dashboard Routes */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="users/managers" element={<AdminUsers />} />
+            <Route path="users/owners" element={<AdminUsers />} />
+            <Route path="users/tenants" element={<AdminUsers />} />
+            <Route path="properties" element={<AdminProperties />} />
+            <Route path="managers-overview" element={<AdminManagersOverview />} />
+            <Route path="statistics" element={<AdminStatistics />} />
+            <Route path="notifications" element={<AdminNotifications />} />
+            <Route path="settings" element={<AdminSettings />} />
           </Route>
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
