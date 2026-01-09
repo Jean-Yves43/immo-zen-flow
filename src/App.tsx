@@ -28,6 +28,30 @@ import AdminStatistics from "./pages/admin/AdminStatistics";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminSettings from "./pages/admin/AdminSettings";
 
+// Owner pages
+import { OwnerLayout } from "./layouts/OwnerLayout";
+import OwnerDashboard from "./pages/owner/OwnerDashboard";
+import OwnerProperties from "./pages/owner/OwnerProperties";
+import OwnerTenants from "./pages/owner/OwnerTenants";
+import OwnerPayments from "./pages/owner/OwnerPayments";
+import OwnerReceipts from "./pages/owner/OwnerReceipts";
+import OwnerMaintenance from "./pages/owner/OwnerMaintenance";
+import OwnerSales from "./pages/owner/OwnerSales";
+import OwnerStatistics from "./pages/owner/OwnerStatistics";
+import OwnerSettings from "./pages/owner/OwnerSettings";
+
+// Manager pages
+import { ManagerLayout } from "./layouts/ManagerLayout";
+import ManagerDashboard from "./pages/manager/ManagerDashboard";
+import ManagerOwners from "./pages/manager/ManagerOwners";
+import ManagerProperties from "./pages/manager/ManagerProperties";
+import ManagerTenants from "./pages/manager/ManagerTenants";
+import ManagerPayments from "./pages/manager/ManagerPayments";
+import ManagerMaintenance from "./pages/manager/ManagerMaintenance";
+import ManagerStatistics from "./pages/manager/ManagerStatistics";
+import ManagerNotifications from "./pages/manager/ManagerNotifications";
+import ManagerSettings from "./pages/manager/ManagerSettings";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -63,6 +87,32 @@ const App = () => (
             <Route path="statistics" element={<AdminStatistics />} />
             <Route path="notifications" element={<AdminNotifications />} />
             <Route path="settings" element={<AdminSettings />} />
+          </Route>
+
+          {/* Owner Dashboard Routes */}
+          <Route path="/owner" element={<OwnerLayout />}>
+            <Route index element={<OwnerDashboard />} />
+            <Route path="properties" element={<OwnerProperties />} />
+            <Route path="tenants" element={<OwnerTenants />} />
+            <Route path="payments" element={<OwnerPayments />} />
+            <Route path="receipts" element={<OwnerReceipts />} />
+            <Route path="maintenance" element={<OwnerMaintenance />} />
+            <Route path="sales" element={<OwnerSales />} />
+            <Route path="statistics" element={<OwnerStatistics />} />
+            <Route path="settings" element={<OwnerSettings />} />
+          </Route>
+
+          {/* Manager Dashboard Routes */}
+          <Route path="/manager" element={<ManagerLayout />}>
+            <Route index element={<ManagerDashboard />} />
+            <Route path="owners" element={<ManagerOwners />} />
+            <Route path="properties" element={<ManagerProperties />} />
+            <Route path="tenants" element={<ManagerTenants />} />
+            <Route path="payments" element={<ManagerPayments />} />
+            <Route path="maintenance" element={<ManagerMaintenance />} />
+            <Route path="statistics" element={<ManagerStatistics />} />
+            <Route path="notifications" element={<ManagerNotifications />} />
+            <Route path="settings" element={<ManagerSettings />} />
           </Route>
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
