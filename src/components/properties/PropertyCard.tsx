@@ -13,14 +13,16 @@ interface Property {
   images: number;
   type: string;
   featured: boolean;
+  forSale?: boolean;
 }
 
 interface PropertyCardProps {
   property: Property;
   delay?: number;
+  isSale?: boolean;
 }
 
-export const PropertyCard = ({ property, delay = 0 }: PropertyCardProps) => {
+export const PropertyCard = ({ property, delay = 0, isSale = false }: PropertyCardProps) => {
   const [isFavorite, setIsFavorite] = useState(false);
 
   return (
@@ -112,8 +114,10 @@ export const PropertyCard = ({ property, delay = 0 }: PropertyCardProps) => {
             {property.type}
           </Badge>
           <div className="text-right">
-            <span className="text-2xl font-bold text-primary">{property.price}€</span>
-            <span className="text-muted-foreground text-sm">/mois</span>
+            <span className="text-2xl font-bold text-primary">
+              {isSale ? `${property.price.toLocaleString()}€` : `${property.price}€`}
+            </span>
+            {!isSale && <span className="text-muted-foreground text-sm">/mois</span>}
           </div>
         </div>
       </div>
