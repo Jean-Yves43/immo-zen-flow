@@ -1,6 +1,7 @@
 import { Heart, Bed, Bath, Maximize, Camera, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Property {
   id: number;
@@ -24,10 +25,16 @@ interface PropertyCardProps {
 
 export const PropertyCard = ({ property, delay = 0, isSale = false }: PropertyCardProps) => {
   const [isFavorite, setIsFavorite] = useState(false);
+  const navigate = useNavigate();
+
+  const handleCardClick = () => {
+    navigate(`/property/${property.id}`);
+  };
 
   return (
     <article
-      className="group bg-card rounded-2xl overflow-hidden shadow-soft hover:shadow-medium transition-all duration-300 animate-fade-up border border-border/50"
+      onClick={handleCardClick}
+      className="group bg-card rounded-2xl overflow-hidden shadow-soft hover:shadow-medium transition-all duration-300 animate-fade-up border border-border/50 cursor-pointer"
       style={{ animationDelay: `${delay}s` }}
     >
       {/* Image Container */}
@@ -54,7 +61,10 @@ export const PropertyCard = ({ property, delay = 0, isSale = false }: PropertyCa
 
         {/* Favorite button */}
         <button
-          onClick={() => setIsFavorite(!isFavorite)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsFavorite(!isFavorite);
+          }}
           className={`absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
             isFavorite
               ? "bg-red-500 text-white"

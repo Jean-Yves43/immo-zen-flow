@@ -1,4 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +10,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Mail, Lock, User, Eye, EyeOff, Shield } from "lucide-react";
+import { toast } from "sonner";
 
 interface AuthDialogProps {
   open: boolean;
@@ -17,9 +26,42 @@ interface AuthDialogProps {
   defaultTab?: "login" | "signup";
 }
 
+type UserRole = "admin" | "manager" | "owner" | "tenant";
+
+interface MockUser {
+  email: string;
+  password: string;
+  name: string;
+  role: UserRole;
+}
+
+// Mock users for simulation
+const mockUsers: MockUser[] = [
+  { email: "admin@immo.com", password: "admin123", name: "Admin Principal", role: "admin" },
+  { email: "gestionnaire@immo.com", password: "manager123", name: "Marie Gestionnaire", role: "manager" },
+  { email: "proprietaire@immo.com", password: "owner123", name: "Pierre Propriétaire", role: "owner" },
+  { email: "locataire@immo.com", password: "tenant123", name: "Sophie Locataire", role: "tenant" },
+];
+
+const roleLabels: Record<UserRole, string> = {
+  admin: "Administrateur",
+  manager: "Gestionnaire",
+  owner: "Propriétaire",
+  tenant: "Locataire",
+};
+
+const roleDashboards: Record<UserRole, string> = {
+  admin: "/admin",
+  manager: "/manager",
+  owner: "/owner",
+  tenant: "/tenant",
+};
+
 export const AuthDialog = ({ open, onOpenChange, defaultTab = "login" }: AuthDialogProps) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"login" | "signup">(defaultTab);
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<UserRole>("tenant");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -37,16 +79,68 @@ export const AuthDialog = ({ open, onOpenChange, defaultTab = "login" }: AuthDia
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    // UI only (auth réelle à brancher plus tard)
+
+    if (activeTab === "login") {
+      // Find user by email and password
+      const user = mockUsers.find(
+        (u) => u.email === formData.email && u.password === formData.password
+      );
+
+      if (user) {
+        // Store user in localStorage for simulation
+        localStorage.setItem("currentUser", JSON.stringify(user));
+        toast.success(`Bienvenue ${user.name} !`, {
+          description: `Connexion en tant que ${roleLabels[user.role]}`,
+        });
+        onOpenChange(false);
+        navigate(roleDashboards[user.role]);
+      } else {
+        toast.error("Identifiants incorrects", {
+          description: "Vérifiez votre email et mot de passe",
+        });
+      }
+    } else {
+      // Signup - create new user with selected role
+      if (formData.password !== formData.confirmPassword) {
+        toast.error("Les mots de passe ne correspondent pas");
+        return;
+      }
+
+      const newUser: MockUser = {
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,
+        role: selectedRole,
+      };
+
+      // Store user in localStorage for simulation
+      localStorage.setItem("currentUser", JSON.stringify(newUser));
+      toast.success(`Compte créé avec succès !`, {
+        description: `Bienvenue ${newUser.name}, votre compte ${roleLabels[selectedRole]} est activé`,
+      });
+      onOpenChange(false);
+      navigate(roleDashboards[selectedRole]);
+    }
   };
 
   const handleSocialLogin = (_provider: "google" | "facebook") => {
-    // UI only (OAuth réelle à brancher plus tard)
+    toast.info("Connexion sociale", {
+      description: "Cette fonctionnalité sera disponible prochainement",
+    });
+  };
+
+  const handleQuickLogin = (user: MockUser) => {
+    localStorage.setItem("currentUser", JSON.stringify(user));
+    toast.success(`Connexion rapide - ${user.name}`, {
+      description: `Vous êtes connecté en tant que ${roleLabels[user.role]}`,
+    });
+    onOpenChange(false);
+    navigate(roleDashboards[user.role]);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[440px] max-h-[90vh] overflow-y-auto p-0 bg-background border-border fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+      <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto p-0 bg-background border-border">
         {/* Header with tabs */}
         <div className="flex border-b border-border">
           <button
@@ -78,7 +172,7 @@ export const AuthDialog = ({ open, onOpenChange, defaultTab = "login" }: AuthDia
         </div>
 
         <div className="p-6">
-          <DialogHeader className="mb-6">
+          <DialogHeader className="mb-4">
             <DialogTitle className="text-2xl font-bold text-center">
               {activeTab === "login" ? "Bienvenue !" : "Rejoignez-nous"}
             </DialogTitle>
@@ -89,65 +183,124 @@ export const AuthDialog = ({ open, onOpenChange, defaultTab = "login" }: AuthDia
             </p>
           </DialogHeader>
 
-          {/* Social Login Buttons */}
-          <div className="space-y-3 mb-6">
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full h-11 gap-3 font-medium hover:bg-muted/50"
-              onClick={() => handleSocialLogin("google")}
-            >
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-muted text-foreground font-semibold">
-                G
-              </span>
-              Continuer avec Google
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full h-11 gap-3 font-medium hover:bg-muted/50"
-              onClick={() => handleSocialLogin("facebook")}
-            >
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-muted text-foreground font-semibold">
-                f
-              </span>
-              Continuer avec Facebook
-            </Button>
-          </div>
+          {/* Quick Login Buttons for Demo */}
+          {activeTab === "login" && (
+            <div className="mb-6">
+              <p className="text-xs text-muted-foreground text-center mb-3">
+                Connexion rapide (Démo)
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {mockUsers.map((user) => (
+                  <Button
+                    key={user.role}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-auto py-2 px-3 flex flex-col items-start gap-0.5 hover:bg-primary/10 hover:border-primary"
+                    onClick={() => handleQuickLogin(user)}
+                  >
+                    <span className="text-xs font-semibold">{roleLabels[user.role]}</span>
+                    <span className="text-[10px] text-muted-foreground">{user.email}</span>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Divider */}
-          <div className="relative mb-6">
-            <Separator />
-            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-3 text-xs text-muted-foreground">
-              ou
-            </span>
-          </div>
+          {activeTab === "login" && (
+            <div className="relative mb-4">
+              <Separator />
+              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-3 text-xs text-muted-foreground">
+                ou avec identifiants
+              </span>
+            </div>
+          )}
+
+          {/* Social Login Buttons */}
+          {activeTab === "signup" && (
+            <>
+              <div className="space-y-3 mb-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-10 gap-3 font-medium hover:bg-muted/50"
+                  onClick={() => handleSocialLogin("google")}
+                >
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-muted text-foreground font-semibold text-sm">
+                    G
+                  </span>
+                  Continuer avec Google
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-10 gap-3 font-medium hover:bg-muted/50"
+                  onClick={() => handleSocialLogin("facebook")}
+                >
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-muted text-foreground font-semibold text-sm">
+                    f
+                  </span>
+                  Continuer avec Facebook
+                </Button>
+              </div>
+
+              <div className="relative mb-4">
+                <Separator />
+                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-3 text-xs text-muted-foreground">
+                  ou
+                </span>
+              </div>
+            </>
+          )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
             {activeTab === "signup" && (
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-medium">
-                  Nom complet
-                </Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="name"
-                    name="name"
-                    type="text"
-                    placeholder="Jean Dupont"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="pl-10 h-11"
-                    required
-                  />
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="name" className="text-sm font-medium">
+                    Nom complet
+                  </Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="name"
+                      name="name"
+                      type="text"
+                      placeholder="Jean Dupont"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      className="pl-10 h-10"
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="role" className="text-sm font-medium">
+                    Type de compte
+                  </Label>
+                  <div className="relative">
+                    <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                    <Select value={selectedRole} onValueChange={(value: UserRole) => setSelectedRole(value)}>
+                      <SelectTrigger className="pl-10 h-10">
+                        <SelectValue placeholder="Sélectionnez votre rôle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="tenant">Locataire</SelectItem>
+                        <SelectItem value="owner">Propriétaire</SelectItem>
+                        <SelectItem value="manager">Gestionnaire</SelectItem>
+                        <SelectItem value="admin">Administrateur</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </>
             )}
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="email" className="text-sm font-medium">
                 Adresse email
               </Label>
@@ -160,13 +313,13 @@ export const AuthDialog = ({ open, onOpenChange, defaultTab = "login" }: AuthDia
                   placeholder="vous@exemple.com"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="pl-10 h-11"
+                  className="pl-10 h-10"
                   required
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="password" className="text-sm font-medium">
                 Mot de passe
               </Label>
@@ -179,7 +332,7 @@ export const AuthDialog = ({ open, onOpenChange, defaultTab = "login" }: AuthDia
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="pl-10 pr-10 h-11"
+                  className="pl-10 pr-10 h-10"
                   required
                 />
                 <button
@@ -197,7 +350,7 @@ export const AuthDialog = ({ open, onOpenChange, defaultTab = "login" }: AuthDia
             </div>
 
             {activeTab === "signup" && (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="confirmPassword" className="text-sm font-medium">
                   Confirmer le mot de passe
                 </Label>
@@ -210,7 +363,7 @@ export const AuthDialog = ({ open, onOpenChange, defaultTab = "login" }: AuthDia
                     placeholder="••••••••"
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
-                    className="pl-10 h-11"
+                    className="pl-10 h-10"
                     required
                   />
                 </div>
@@ -228,7 +381,7 @@ export const AuthDialog = ({ open, onOpenChange, defaultTab = "login" }: AuthDia
               </div>
             )}
 
-            <Button type="submit" variant="primary" className="w-full h-11 font-semibold">
+            <Button type="submit" variant="primary" className="w-full h-10 font-semibold">
               {activeTab === "login" ? "Se connecter" : "Créer mon compte"}
             </Button>
           </form>
