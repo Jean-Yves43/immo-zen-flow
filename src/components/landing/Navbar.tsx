@@ -6,9 +6,9 @@ import { AuthDialog } from "@/components/auth/AuthDialog";
 
 const navItems = [
   { label: "Louer", href: "/louer" },
-  { label: "Vendre", href: "#services" },
-  { label: "Devenir partenaire", href: "#crm" },
-  { label: "À propos", href: "#about" },
+  { label: "Vendre", href: "/vendre" },
+  { label: "Devenir partenaire", href: "/devenir-partenaire" },
+  { label: "À propos", href: "/a-propos" },
 ];
 
 export const Navbar = () => {

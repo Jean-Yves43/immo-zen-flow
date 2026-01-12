@@ -46,7 +46,7 @@ export const AuthDialog = ({ open, onOpenChange, defaultTab = "login" }: AuthDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[440px] p-0 overflow-hidden bg-background border-border">
+      <DialogContent className="sm:max-w-[440px] max-h-[90vh] overflow-y-auto p-0 bg-background border-border fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
         {/* Header with tabs */}
         <div className="flex border-b border-border">
           <button
