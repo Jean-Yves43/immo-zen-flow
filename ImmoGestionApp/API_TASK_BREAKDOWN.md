@@ -1,45 +1,41 @@
-# API Task Breakdown for Dashboard Development
+# Répartition des Tâches pour l'API des Tableaux de Bord
 
-This document outlines the division of tasks for the three-person team responsible for building the API for the ImmoGestionApp dashboards.
+Ce document décrit la répartition des tâches pour l'équipe de trois personnes chargée de construire l'API pour les tableaux de bord de ImmoGestionApp.
 
-## Team Composition and Responsibilities
+## Composition de l'Équipe et Responsabilités
 
-### Team Member 1: Admin Dashboard API
+### Membre de l'Équipe 1 : API du Tableau de Bord Gestionnaire
 
-- **User Management:**
-  - Implement CRUD (Create, Read, Update, Delete) operations for users (admins, gestionnaires, proprietaires, locataires).
-  - API endpoints for user authentication and authorization.
-  - Endpoints for assigning roles and permissions.
-- **Global Settings:**
-  - API for managing application-wide settings.
-  - Endpoints for site configuration and customization.
-- **Reporting and Analytics:**
-  - Develop endpoints to generate reports on user activity, property listings, and financials.
-  - API for fetching data for the admin dashboard analytics.
+- **Gestion Immobilière :**
+  - Opérations CRUD (Créer, Lire, Mettre à jour, Supprimer) pour les biens immobiliers (annonces, détails, images).
+  - API pour gérer la disponibilité et le statut des biens.
+  - Points de terminaison pour gérer les demandes de maintenance.
+- **Gestion Financière :**
+  - API pour le suivi des paiements (loyers, frais, etc.).
+  - API pour la gestion des dépenses liées aux biens.
+- **Communication :**
+  - Points de terminaison pour la messagerie entre le gestionnaire, le propriétaire et le locataire.
 
-### Team Member 2: Gestionnaire and Proprietaire Dashboard APIs
+### Membre de l'Équipe 2 : API du Tableau de Bord Propriétaire
 
-- **Property Management:**
-  - CRUD operations for properties (listings, details, images).
-  - API for managing property availability and status.
-  - Endpoints for handling maintenance requests.
-- **Financial Management:**
-  - API for tracking payments (rent, fees, etc.).
-  - Endpoints for generating financial statements for propriétaires.
-  - API for managing expenses related to properties.
-- **Communication:**
-  - Endpoints for messaging between gestionnaire, proprietaire, and locataire.
+- **Suivi des Biens :**
+  - API pour visualiser le statut des biens et les informations des locataires.
+  - Points de terminaison pour approuver les demandes de maintenance.
+- **Gestion Financière :**
+  - Points de terminaison pour générer les états financiers pour les propriétaires.
+- **Communication :**
+  - Consulter l'historique des communications relatives à ses biens.
 
-### Team Member 3: Locataire Dashboard API & Shared Functionalities
+### Membre de l'Équipe 3 : API du Tableau de Bord Locataire & Fonctionnalités Partagées
 
-- **User Profile:**
-  - API for locataires to manage their profiles.
-  - Endpoints for updating personal information and preferences.
-- **Rental Management:**
-  - API for viewing rental agreements and payment history.
-  - Endpoints for submitting maintenance requests.
-  - API for making payments.
-- **Shared Functionalities:**
-  - Implement a robust and reusable authentication module for all user types.
-  - Develop a notification system (email, in-app) for all users.
-  - Set up API documentation (e.g., using Swagger or Postman).
+- **Profil Utilisateur :**
+  - API permettant aux locataires de gérer leur profil.
+  - Points de terminaison pour la mise à jour des informations personnelles et des préférences.
+- **Gestion de la Location :**
+  - API pour consulter les contrats de location et l'historique des paiements.
+  - Points de terminaison pour soumettre des demandes de maintenance.
+  - API pour effectuer les paiements.
+- **Fonctionnalités Partagées :**
+  - Implémenter un module d'authentification robuste et réutilisable pour tous les types d'utilisateurs.
+  - Développer un système de notification (email, in-app) pour tous les utilisateurs.
+  - Mettre en place la documentation de l'API (par exemple, avec Swagger ou Postman).
