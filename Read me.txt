@@ -1,0 +1,44 @@
+API gestionnaire:
+# Authentification
+POST http://localhost:8080/api/auth/login
+POST http://localhost:8080/api/auth/register
+
+# Gestionnaires
+GET http://localhost:8080/api/gestionnaire/list
+GET http://localhost:8080/api/gestionnaire/gestionnaireId/proprietaires
+GET http://localhost:8080/api/gestionnaire/gestionnaireId/locataires
+GET http://localhost:8080/api/gestionnaire/gestionnaireId/paiements
+GET http://localhost:8080/api/gestionnaire/gestionnaireId/maintenances
+GET http://localhost:8080/api/gestionnaire/gestionnaireId/biens
+GET http://localhost:8080/api/gestionnaire/gestionnaireId/statistiques
+GET http://localhost:8080/api/gestionnaire/gestionnaireId/revenus
+
+# Détails
+GET http://localhost:8080/api/gestionnaire/biens/bienId
+GET http://localhost:8080/api/gestionnaire/users/userId
+GET http://localhost:8080/api/gestionnaire/locataires/locataireId
+GET http://localhost:8080/api/gestionnaire/maintenances/maintenancesId
+
+# Avec filtres
+GET http://localhost:8080/api/gestionnaire/biens?proprietaireIds=1,2,3
+GET http://localhost:8080/api/gestionnaire/3/biens?statut=DISPONIBLE
+GET http://localhost:8080/api/gestionnaire/3/maintenances?statut=EN_COURS
+GET http://localhost:8080/api/gestionnaire/3/statistiques?dateDebut=2026-01-01&dateFin=2026-01-31
+
+
+reste a faire:
+api: update, create pour propriétaires,biens, locataires 
+gestion des notification et paramètres.
+
+
+API PROPRIETAIRE(owner)
+rien encore fait.
+
+Il faut faire liste des biens, details + stats
+list locataires, details + stats
+paymets& loyers(liste et details + stats )
+recu + contrat /locataire (list + detail + telecharger+ stats)
+maintenance (tu peux essayer de calquer sur l'api tout haut)
+ventes(list + details)
+statistiques
+parametres (info user, update user info
