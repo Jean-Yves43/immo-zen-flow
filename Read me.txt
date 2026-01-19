@@ -41,4 +41,4 @@ recu + contrat /locataire (list + detail + telecharger+ stats)
 maintenance (tu peux essayer de calquer sur l'api tout haut)
 ventes(list + details)
 statistiques
-parametres (info user, update user info
+parametres (info user, update user info) j'ai deja fait l'api user details
