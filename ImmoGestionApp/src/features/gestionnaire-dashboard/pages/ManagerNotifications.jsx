@@ -6,14 +6,7 @@ import { Button } from "../../../components/Button";
 import { Badge } from "../../../components/Badge";
 import { KpiCard } from "../components/KpiCard";
 import { PageHeader } from "../components/PageHeader";
-
-const initialNotifications = [
-  { id: 1, type: "payment", title: "Loyer en retard", message: "Marie Lambert - Studio Leclerc", time: "Il y a 2h", read: false, urgent: true },
-  { id: 2, type: "maintenance", title: "Urgence plomberie", message: "Apt T3 Victor Hugo - Fuite importante", time: "Il y a 4h", read: false, urgent: true },
-  { id: 3, type: "owner", title: "Nouveau propriétaire", message: "M. Robert a accepté votre invitation", time: "Hier", read: false, urgent: false },
-  { id: 4, type: "payment", title: "Paiement reçu", message: "Jean Dupont - 1200€", time: "Hier", read: true, urgent: false },
-  { id: 5, type: "property", title: "Bien mis en vente", message: "T2 Rue de la Paix - 320 000€", time: "Il y a 2 jours", read: true, urgent: false },
-];
+import { initialNotifications } from "../api/manager";
 
 const iconMap = {
   payment: CreditCard,
