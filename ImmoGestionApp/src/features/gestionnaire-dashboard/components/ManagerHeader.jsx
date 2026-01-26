@@ -14,7 +14,9 @@ import {
 } from "../../../components/DropdownMenu";
 import { Avatar, AvatarFallback, AvatarImage } from "../../../components/Avatar";
 import { Badge } from "../../../components/Badge";
-import { useAuth } from "../../../contexts/Authcontext";
+import { useAuth } from "../../../contexts/AuthContext";
+// ✅ MODIFICATION : Import du nouveau service
+import notificationService from "../../../services/notificationService";
 
 export function ManagerHeader({ sidebarCollapsed = false }) {
   const navigate = useNavigate();
@@ -22,34 +24,36 @@ export function ManagerHeader({ sidebarCollapsed = false }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Charger les notifications (vous pouvez remplacer ceci par un vrai appel API)
+  // Charger les notifications depuis l'API
   useEffect(() => {
-    // Simuler le chargement des notifications
-    // TODO: Remplacer par un vrai appel API
-    const mockNotifications = [
-      {
-        id: 1,
-        title: "Nouveau propriétaire",
-        message: "M. Durand a accepté votre invitation",
-        read: false,
-        timestamp: new Date()
-      },
-      {
-        id: 2,
-        title: "Retard de paiement",
-        message: "3 loyers en retard ce mois",
-        read: false,
-        timestamp: new Date()
-      },
-    ];
+    const loadNotifications = async () => {
+      // ✅ CORRECTION : Utiliser user.userId au lieu de user.id
+      if (!user?.userId) return;
 
-    setNotifications(mockNotifications);
-    setUnreadCount(mockNotifications.filter(n => !n.read).length);
-  }, []);
+      try {
+        // Charger uniquement les notifications non lues pour le dropdown
+        const data = await notificationService.getNotificationsNonLues(user.userId);
+        setNotifications(data.slice(0, 5)); // Limiter à 5 notifications
+        
+        // Charger le compteur
+        const count = await notificationService.countNotificationsNonLues(user.userId);
+        setUnreadCount(count);
+      } catch (error) {
+        console.error('Erreur lors du chargement des notifications:', error);
+      }
+    };
+
+    loadNotifications();
+
+    // Polling toutes les 30 secondes pour les nouvelles notifications
+    const interval = setInterval(loadNotifications, 30000);
+
+    return () => clearInterval(interval);
+  }, [user?.userId]);
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
   };
 
   const handleProfileClick = () => {
@@ -60,15 +64,24 @@ export function ManagerHeader({ sidebarCollapsed = false }) {
     navigate('/manager/settings');
   };
 
-  const handleNotificationClick = (notificationId) => {
-    // Marquer la notification comme lue
-    setNotifications(prev => 
-      prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
-    );
-    setUnreadCount(prev => Math.max(0, prev - 1));
-    
-    // Naviguer vers la page des notifications
-    navigate('/manager/notifications');
+  const handleNotificationClick = async (notificationId) => {
+    try {
+      // Marquer la notification comme lue
+      await notificationService.marquerCommeLue(notificationId, user.userId);
+      
+      // Mettre à jour l'état local
+      setNotifications(prev => 
+        prev.map(n => n.id === notificationId ? { ...n, lue: true } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      
+      // Naviguer vers la page des notifications
+      navigate('/manager/notifications');
+    } catch (error) {
+      console.error('Erreur lors du marquage de la notification:', error);
+      // Même en cas d'erreur, naviguer vers la page des notifications
+      navigate('/manager/notifications');
+    }
   };
 
   // Obtenir les initiales de l'utilisateur
@@ -116,34 +129,49 @@ export function ManagerHeader({ sidebarCollapsed = false }) {
                 <Bell className="h-5 w-5 text-muted-foreground" />
                 {unreadCount > 0 && (
                   <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive">
-                    {unreadCount}
+                    {unreadCount > 99 ? '99+' : unreadCount}
                   </Badge>
                 )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              <DropdownMenuLabel className="flex items-center justify-between">
+                <span>Notifications</span>
+                {unreadCount > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {unreadCount} nouvelle{unreadCount > 1 ? 's' : ''}
+                  </Badge>
+                )}
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               {notifications.length === 0 ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">
-                  Aucune notification
+                  Aucune notification non lue
                 </div>
               ) : (
                 <>
-                  {notifications.slice(0, 5).map((notification) => (
+                  {notifications.map((notification) => (
                     <DropdownMenuItem 
                       key={notification.id}
                       className="flex flex-col items-start gap-1 p-3 cursor-pointer"
                       onClick={() => handleNotificationClick(notification.id)}
                     >
                       <div className="flex items-center gap-2 w-full">
-                        <span className="font-medium">{notification.title}</span>
-                        {!notification.read && (
+                        <span className="font-medium text-sm">{notification.titre}</span>
+                        {notification.urgente && (
+                          <Badge variant="destructive" className="ml-auto text-xs">
+                            Urgent
+                          </Badge>
+                        )}
+                        {!notification.lue && (
                           <Badge className="ml-auto bg-secondary text-secondary-foreground h-2 w-2 p-0 rounded-full" />
                         )}
                       </div>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-xs text-muted-foreground line-clamp-2">
                         {notification.message}
+                      </span>
+                      <span className="text-xs text-muted-foreground/70 mt-1">
+                        {notification.tempsRelatif}
                       </span>
                     </DropdownMenuItem>
                   ))}

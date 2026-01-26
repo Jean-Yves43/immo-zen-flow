@@ -1,3 +1,4 @@
+// src/features/proprietaire-dashboard/pages/OwnerDashboard.jsx
 import {
   Home,
   ArrowUpRight,

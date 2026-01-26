@@ -14,7 +14,8 @@ import { KpiCard } from "../components/KpiCard";
 import { PageHeader } from "../components/PageHeader";
 import { SearchFilterBar } from "../components/SearchFilterBar";
 import { useAuth } from "../../../contexts/Authcontext";
-import { paiementsService } from "../api/paiements";
+// ✅ MODIFICATION : Import du nouveau service
+import paiementsService from "../api/paiements";
 
 export default function ManagerPayments() {
   const { user } = useAuth();
@@ -68,14 +69,11 @@ export default function ManagerPayments() {
     setDetailsLoading(true);
 
     try {
-      if (paiementsService.getDetailsPaiement) {
-        const details = await paiementsService.getDetailsPaiement(paiement.id);
-        setPaiementDetails(details);
-      } else {
-        setPaiementDetails(paiement);
-      }
+      const details = await paiementsService.getDetailsPaiement(paiement.id);
+      setPaiementDetails(details);
     } catch (err) {
       console.error("Erreur lors du chargement des détails:", err);
+      // En cas d'erreur, utiliser les données du paiement
       setPaiementDetails(paiement);
     } finally {
       setDetailsLoading(false);
@@ -92,19 +90,28 @@ export default function ManagerPayments() {
 
   // Envoyer une relance
   const handleSendRelance = async () => {
-    if (!selectedPaiement || !messageRelance.trim()) return;
+    if (!selectedPaiement || !messageRelance.trim() || !user?.userId) return;
 
     try {
       setRelanceLoading(true);
-      await paiementsService.envoyerRelance(selectedPaiement.id, {
-        typeRelance,
-        messagePersonnalise: messageRelance,
-      });
       
-      // Fermer le popup et rafraîchir
+      const response = await paiementsService.envoyerRelance(
+        user.userId,  // gestionnaireId
+        selectedPaiement.id,
+        {
+          typeRelance,
+          messagePersonnalise: messageRelance,
+        }
+      );
+      
+      // Fermer le popup
       setIsRelanceOpen(false);
-      // Optionnel : afficher un message de succès
-      alert("Relance envoyée avec succès !");
+      
+      // Message de succès
+      alert(`Relance ${typeRelance} envoyée à ${response.locataireNom} ! Une notification a été créée.`);
+      
+      // Rafraîchir la liste des paiements
+      await loadPaiements();
     } catch (err) {
       console.error("Erreur lors de l'envoi de la relance:", err);
       alert("Erreur lors de l'envoi de la relance : " + err.message);
@@ -117,6 +124,19 @@ export default function ManagerPayments() {
   const handleDownloadRecu = () => {
     // TODO: Implémenter la génération et le téléchargement du reçu
     alert("Téléchargement du reçu en cours...");
+  };
+
+  // ✅ AMÉLIORATION : Fonction d'export CSV
+  const handleExportCSV = () => {
+    try {
+      paiementsService.downloadCSV(
+        sortedPaiements,
+        `paiements-${new Date().toISOString().split('T')[0]}.csv`
+      );
+    } catch (err) {
+      console.error("Erreur lors de l'export:", err);
+      alert("Erreur lors de l'export CSV");
+    }
   };
 
   // Filtrer les paiements
@@ -168,7 +188,6 @@ export default function ManagerPayments() {
         { value: "PAYE", label: "Payé" },
         { value: "EN_ATTENTE", label: "En attente" },
         { value: "EN_RETARD", label: "En retard" },
-        { value: "PARTIEL", label: "Partiel" }
       ]
     }
   ];
@@ -228,7 +247,7 @@ export default function ManagerPayments() {
         description={`${stats.total} paiement${stats.total > 1 ? 's' : ''} • ${Math.round(stats.tauxPaiement)}% payés`}
         actions={
           <>
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleExportCSV}>
               <Download className="mr-2 h-4 w-4" />
               Exporter
             </Button>
@@ -420,17 +439,17 @@ export default function ManagerPayments() {
                     </>
                   )}
 
-                  {paiementDetails.methodePaiement && (
+                  {paiementDetails.modePaiement && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Méthode de paiement</p>
-                      <p className="font-medium">{paiementDetails.methodePaiement}</p>
+                      <p className="text-sm text-muted-foreground">Mode de paiement</p>
+                      <p className="font-medium">{paiementDetails.modePaiement}</p>
                     </div>
                   )}
 
-                  {paiementDetails.reference && (
+                  {paiementDetails.refTrans && (
                     <div>
-                      <p className="text-sm text-muted-foreground">Référence</p>
-                      <p className="font-mono text-sm">{paiementDetails.reference}</p>
+                      <p className="text-sm text-muted-foreground">Référence transaction</p>
+                      <p className="font-mono text-sm">{paiementDetails.refTrans}</p>
                     </div>
                   )}
                 </CardContent>

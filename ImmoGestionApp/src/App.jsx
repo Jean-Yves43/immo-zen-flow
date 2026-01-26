@@ -3,8 +3,8 @@ import { Toaster } from "./components/Toaster";
 import { Toaster as Sonner } from "./components/Sonner";
 import { TooltipProvider } from "./components/Tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider, ROLES } from "./contexts/Authcontext";
+import { Routes, Route } from "react-router-dom";
+import { ROLES } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 import Landing from "./features/landing/pages/Landing";
@@ -61,94 +61,90 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            {/* Routes publiques */}
-            <Route path="/" element={<Landing />} />
-            <Route path="/louer" element={<Louer />} />
-            
-            {/* Tenant Dashboard Routes - LOCATAIRE */}
-            <Route 
-              path="/tenant" 
-              element={
-                <ProtectedRoute allowedRoles={[ROLES.LOCATAIRE]}>
-                  <TenantLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<TenantDashboard />} />
-              <Route path="logement" element={<TenantLogement />} />
-              <Route path="paiements" element={<TenantPaiements />} />
-              <Route path="recus" element={<TenantRecus />} />
-              <Route path="maintenance" element={<TenantMaintenance />} />
-              <Route path="notifications" element={<TenantNotifications />} />
-              <Route path="profil" element={<TenantProfil />} />
-            </Route>
 
-            {/* Admin Dashboard Routes - ADMIN */}
-            <Route 
-              path="/admin" 
-              element={
-                <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<AdminDashboard />} />
-              <Route path="users/managers" element={<AdminUsers />} />
-              <Route path="users/owners" element={<AdminUsers />} />
-              <Route path="users/tenants" element={<AdminUsers />} />
-              <Route path="properties" element={<AdminProperties />} />
-              <Route path="managers-overview" element={<AdminManagersOverview />} />
-              <Route path="statistics" element={<AdminStatistics />} />
-              <Route path="notifications" element={<AdminNotifications />} />
-              <Route path="settings" element={<AdminSettings />} />
-            </Route>
+      <Routes>
+        {/* Routes publiques */}
+        <Route path="/" element={<Landing />} />
+        <Route path="/louer" element={<Louer />} />
 
-            {/* Owner Dashboard Routes - PROPRIETAIRE */}
-            <Route 
-              path="/owner" 
-              element={
-                <ProtectedRoute allowedRoles={[ROLES.PROPRIETAIRE]}>
-                  <OwnerLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<OwnerDashboard />} />
-              <Route path="properties" element={<OwnerProperties />} />
-              <Route path="tenants" element={<OwnerTenants />} />
-              <Route path="payments" element={<OwnerPayments />} />
-              <Route path="receipts" element={<OwnerReceipts />} />
-              <Route path="maintenance" element={<OwnerMaintenance />} />
-              <Route path="sales" element={<OwnerSales />} />
-              <Route path="statistics" element={<OwnerStatistics />} />
-              <Route path="settings" element={<OwnerSettings />} />
-            </Route>
+        {/* Tenant Dashboard Routes - LOCATAIRE */}
+        <Route
+          path="/tenant"
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.LOCATAIRE]}>
+              <TenantLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<TenantDashboard />} />
+          <Route path="logement" element={<TenantLogement />} />
+          <Route path="paiements" element={<TenantPaiements />} />
+          <Route path="recus" element={<TenantRecus />} />
+          <Route path="maintenance" element={<TenantMaintenance />} />
+          <Route path="notifications" element={<TenantNotifications />} />
+          <Route path="profil" element={<TenantProfil />} />
+        </Route>
 
-            {/* Manager Dashboard Routes - GESTIONNAIRE */}
-            <Route 
-              path="/manager" 
-              element={
-                <ProtectedRoute allowedRoles={[ROLES.GESTIONNAIRE]}>
-                  <ManagerLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<ManagerDashboard />} />
-              <Route path="owners" element={<ManagerOwners />} />
-              <Route path="properties" element={<ManagerProperties />} />
-              <Route path="tenants" element={<ManagerTenants />} />
-              <Route path="payments" element={<ManagerPayments />} />
-              <Route path="maintenance" element={<ManagerMaintenance />} />
-              <Route path="statistics" element={<ManagerStatistics />} />
-              <Route path="notifications" element={<ManagerNotifications />} />
-              <Route path="settings" element={<ManagerSettings />} />
-            </Route>
+        {/* Admin Dashboard Routes - ADMIN */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="users/managers" element={<AdminUsers />} />
+          <Route path="users/owners" element={<AdminUsers />} />
+          <Route path="users/tenants" element={<AdminUsers />} />
+          <Route path="properties" element={<AdminProperties />} />
+          <Route path="managers-overview" element={<AdminManagersOverview />} />
+          <Route path="statistics" element={<AdminStatistics />} />
+          <Route path="notifications" element={<AdminNotifications />} />
+          <Route path="settings" element={<AdminSettings />} />
+        </Route>
 
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
+        {/* Owner Dashboard Routes - PROPRIETAIRE */}
+        <Route
+          path="/owner"
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.PROPRIETAIRE]}>
+              <OwnerLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<OwnerDashboard />} />
+          <Route path="properties" element={<OwnerProperties />} />
+          <Route path="tenants" element={<OwnerTenants />} />
+          <Route path="payments" element={<OwnerPayments />} />
+          <Route path="receipts" element={<OwnerReceipts />} />
+          <Route path="maintenance" element={<OwnerMaintenance />} />
+          <Route path="sales" element={<OwnerSales />} />
+          <Route path="statistics" element={<OwnerStatistics />} />
+          <Route path="settings" element={<OwnerSettings />} />
+        </Route>
+
+        {/* Manager Dashboard Routes - GESTIONNAIRE */}
+        <Route
+          path="/manager"
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.GESTIONNAIRE]}>
+              <ManagerLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<ManagerDashboard />} />
+          <Route path="owners" element={<ManagerOwners />} />
+          <Route path="properties" element={<ManagerProperties />} />
+          <Route path="tenants" element={<ManagerTenants />} />
+          <Route path="payments" element={<ManagerPayments />} />
+          <Route path="maintenance" element={<ManagerMaintenance />} />
+          <Route path="statistics" element={<ManagerStatistics />} />
+          <Route path="notifications" element={<ManagerNotifications />} />
+          <Route path="settings" element={<ManagerSettings />} />
+        </Route>
+      </Routes>
     </TooltipProvider>
   </QueryClientProvider>
 );

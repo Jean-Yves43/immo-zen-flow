@@ -1,124 +1,133 @@
-// src/contexts/Authcontext.jsx
-import { createContext, useContext, useState, useEffect } from 'react';
-import { authService } from '../features/auth/api/authService';
+// src/contexts/AuthContext.jsx
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { authService } from "../features/auth/api/authService";
 
 const AuthContext = createContext(null);
 
-// Définition des rôles et leurs routes
+// Mapping des rôles
 export const ROLES = {
-  ADMIN: 'ADMIN',
-  PROPRIETAIRE: 'PROPRIETAIRE',
-  GESTIONNAIRE: 'GESTIONNAIRE',
-  LOCATAIRE: 'LOCATAIRE',
-  USER: 'USER',
+  ADMIN: "ADMIN",
+  PROPRIETAIRE: "PROPRIETAIRE",
+  GESTIONNAIRE: "GESTIONNAIRE",
+  LOCATAIRE: "LOCATAIRE",
+  USER: "USER",
 };
 
 // Mapping des rôles vers leurs dashboards
 export const ROLE_ROUTES = {
-  ADMIN: '/admin',
-  PROPRIETAIRE: '/owner',
-  GESTIONNAIRE: '/manager',
-  LOCATAIRE: '/tenant',
-  USER: '/',
+  ADMIN: "/admin",
+  PROPRIETAIRE: "/owner",
+  GESTIONNAIRE: "/manager",
+  LOCATAIRE: "/tenant",
+  USER: "/",
+};
+
+// 🔥 Normalise l'utilisateur pour garantir user.id
+const normalizeUser = (raw) => {
+  if (!raw) return null;
+
+  const id =
+    raw.id ??
+    raw.userId ??
+    raw.utilisateurId ??
+    raw.locataireId ??
+    raw.personneId ??
+    raw.compteId ??
+    raw.uuid;
+
+  return {
+    ...raw,
+    id,
+    nom: raw.nom ?? raw.name ?? raw.username ?? raw.prenom ?? "Utilisateur",
+    roleLibelle: raw.roleLibelle ?? raw.role ?? raw.roleName ?? raw.profil,
+  };
 };
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Vérifier si l'utilisateur est déjà connecté au chargement
+  // Charger user depuis storage au démarrage
   useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
+    try {
+      const currentUser = normalizeUser(authService.getCurrentUser());
+      if (currentUser?.id) {
+        setUser(currentUser);
+        localStorage.setItem("user", JSON.stringify(currentUser));
+      } else {
+        setUser(null);
+      }
+    } catch (e) {
+      console.error("Erreur lecture currentUser:", e);
+      setUser(null);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
-  /**
-   * Obtenir la route du dashboard selon le rôle
-   */
   const getDashboardRoute = (roleLibelle) => {
-    return ROLE_ROUTES[roleLibelle] || '/';
+    return ROLE_ROUTES[roleLibelle] || "/";
   };
 
-  /**
-   * Connexion
-   */
   const login = async (identifier, password) => {
-    try {
-      const userData = await authService.login(identifier, password);
-      setUser(userData);
-      return {
-        ...userData,
-        dashboardRoute: getDashboardRoute(userData.roleLibelle),
-      };
-    } catch (error) {
-      throw error;
+    const userData = await authService.login(identifier, password);
+    const normalized = normalizeUser(userData);
+
+    if (!normalized?.id) {
+      throw new Error("Connexion ok mais ID utilisateur manquant (user.id)");
     }
+
+    setUser(normalized);
+    localStorage.setItem("user", JSON.stringify(normalized));
+
+    return {
+      ...normalized,
+      dashboardRoute: getDashboardRoute(normalized.roleLibelle),
+    };
   };
 
-  /**
-   * Déconnexion
-   */
   const logout = () => {
     authService.logout();
+    localStorage.removeItem("user");
     setUser(null);
   };
 
-  /**
-   * Mise à jour des données utilisateur
-   */
   const updateUser = (updatedData) => {
-    const newUser = { ...user, ...updatedData };
+    const newUser = normalizeUser({ ...user, ...updatedData });
     setUser(newUser);
-    localStorage.setItem('user', JSON.stringify(newUser));
+    localStorage.setItem("user", JSON.stringify(newUser));
   };
 
-  /**
-   * Vérifie si l'utilisateur a un rôle spécifique
-   */
-  const hasRole = (roleLibelle) => {
-    return user?.roleLibelle === roleLibelle;
-  };
+  const hasRole = (roleLibelle) => user?.roleLibelle === roleLibelle;
 
-  /**
-   * Vérifie si l'utilisateur a l'un des rôles spécifiés
-   */
-  const hasAnyRole = (roles = []) => {
-    return roles.includes(user?.roleLibelle);
-  };
+  const hasAnyRole = (roles = []) => roles.includes(user?.roleLibelle);
 
-  /**
-   * Obtenir le dashboard de l'utilisateur connecté
-   */
-  const getUserDashboard = () => {
-    return user ? getDashboardRoute(user.roleLibelle) : '/login';
-  };
+  const getUserDashboard = () =>
+    user ? getDashboardRoute(user.roleLibelle) : "/";
 
-  const value = {
-    user,
-    login,
-    logout,
-    updateUser,
-    hasRole,
-    hasAnyRole,
-    getUserDashboard,
-    isAuthenticated: !!user,
-    loading,
-    ROLES,
-  };
+  const value = useMemo(
+    () => ({
+      user,
+      login,
+      logout,
+      updateUser,
+      hasRole,
+      hasAnyRole,
+      getUserDashboard,
+      isAuthenticated: !!user,
+      loading,
+      ROLES,
+    }),
+    [user, loading]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-/**
- * Hook personnalisé pour utiliser le contexte d'authentification
- */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth doit être utilisé à l\'intérieur d\'un AuthProvider');
+    throw new Error("useAuth doit être utilisé à l'intérieur d'un AuthProvider");
   }
   return context;
 };

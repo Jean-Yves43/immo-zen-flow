@@ -1,3 +1,5 @@
+// src/features/proprietaire-dashboard/components/OwnerHeader.jsx
+
 import { Bell, Search, ChevronDown, User, Settings, LogOut } from "lucide-react";
 import { Button } from "../../../components/Button";
 import { Input } from "../../../components/Input";

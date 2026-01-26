@@ -1,14 +1,17 @@
-// src/services/paiements.js
+// src/services/paiements.service.js
 import appConfig from '../../../routes/route';
 
 /**
  * Service pour gérer les paiements d'un gestionnaire
+ * Compatible avec l'API Spring Boot R2DBC réactive
  */
 export const paiementsService = {
   /**
    * Récupère la liste des paiements d'un gestionnaire
+   * Endpoint: GET /api/gestionnaire/{gestionnaireId}/paiements
+   * 
    * @param {number} gestionnaireId - ID du gestionnaire
-   * @returns {Promise<Array>} Liste des paiements
+   * @returns {Promise<Array<PaiementDTO>>} Liste des paiements
    */
   getPaiements: async (gestionnaireId) => {
     try {
@@ -20,22 +23,25 @@ export const paiementsService = {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors de la récupération des paiements');
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
-      return data;
+      
+      // L'API retourne directement un tableau de PaiementDTO
+      return Array.isArray(data) ? data : [];
     } catch (error) {
-      console.error('Erreur lors de la récupération des paiements:', error);
-      throw error;
+      console.error('❌ Erreur lors de la récupération des paiements:', error);
+      throw new Error(error.message || 'Erreur lors de la récupération des paiements');
     }
   },
 
   /**
-   * Récupère les détails d'un paiement
+   * Récupère les détails complets d'un paiement
+   * Endpoint: GET /api/gestionnaire/paiements/{paiementId}/details
+   * 
    * @param {number} paiementId - ID du paiement
-   * @returns {Promise<Object>} Détails du paiement
+   * @returns {Promise<PaiementDetailDTO>} Détails du paiement
    */
   getDetailsPaiement: async (paiementId) => {
     try {
@@ -47,87 +53,120 @@ export const paiementsService = {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors de la récupération des détails du paiement');
+        if (response.status === 404) {
+          throw new Error('Paiement non trouvé');
+        }
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des détails:', error);
-      throw error;
+      console.error('❌ Erreur lors de la récupération des détails:', error);
+      throw new Error(error.message || 'Erreur lors de la récupération des détails du paiement');
     }
   },
 
   /**
-   * Envoie une relance pour un paiement
+   * Envoie une relance pour un paiement en retard
+   * Endpoint: POST /api/gestionnaire/{gestionnaireId}/paiements/{paiementId}/relance
+   * 
+   * Cette méthode crée automatiquement une notification "Relance envoyée"
+   * 
+   * @param {number} gestionnaireId - ID du gestionnaire
    * @param {number} paiementId - ID du paiement
-   * @param {Object} relanceData - { typeRelance: string, messagePersonnalise: string }
-   * @returns {Promise<Object>} Résultat de la relance
+   * @param {RelanceRequestDTO} relanceData - { typeRelance: string, messagePersonnalise: string }
+   * @returns {Promise<RelanceResponseDTO>} Résultat de la relance
    */
-  envoyerRelance: async (paiementId, relanceData) => {
+  envoyerRelance: async (gestionnaireId, paiementId, relanceData) => {
     try {
-      const response = await fetch(appConfig.api.relance_paiement(paiementId), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(relanceData),
-      });
+      // Validation des données
+      if (!relanceData.typeRelance) {
+        throw new Error('Le type de relance est requis');
+      }
+      
+      if (!relanceData.messagePersonnalise?.trim()) {
+        throw new Error('Le message personnalisé est requis');
+      }
+
+      const response = await fetch(
+        appConfig.api.relance_paiement(gestionnaireId, paiementId),
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(relanceData),
+        }
+      );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors de l\'envoi de la relance');
+        if (response.status === 404) {
+          throw new Error('Paiement non trouvé');
+        }
+        if (response.status === 400) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Données de relance invalides');
+        }
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
+      
+      // Le backend retourne RelanceResponseDTO avec:
+      // { relanceId, locataireNom, dateEnvoi, typeRelance, status }
       return data;
     } catch (error) {
-      console.error('Erreur lors de l\'envoi de la relance:', error);
-      throw error;
+      console.error('❌ Erreur lors de l\'envoi de la relance:', error);
+      throw new Error(error.message || 'Erreur lors de l\'envoi de la relance');
     }
   },
 
+  // ========== FILTRES ET RECHERCHE (Client-side) ==========
+
   /**
-   * Recherche dans les paiements
-   * @param {Array} paiements - Liste des paiements
+   * Recherche dans les paiements (filtrage local)
+   * @param {Array<PaiementDTO>} paiements - Liste des paiements
    * @param {string} query - Terme de recherche
-   * @returns {Array} Paiements filtrés
+   * @returns {Array<PaiementDTO>} Paiements filtrés
    */
   searchPaiements: (paiements, query) => {
-    if (!query) return paiements;
+    if (!query?.trim()) return paiements;
 
-    const lowerQuery = query.toLowerCase();
+    const lowerQuery = query.toLowerCase().trim();
     return paiements.filter(p =>
       p.nomLocataire?.toLowerCase().includes(lowerQuery) ||
       p.bienRef?.toLowerCase().includes(lowerQuery) ||
       p.proprietaireNom?.toLowerCase().includes(lowerQuery) ||
-      p.id?.toString().includes(lowerQuery)
+      p.id?.toString().includes(lowerQuery) ||
+      p.refTrans?.toLowerCase().includes(lowerQuery)
     );
   },
 
   /**
    * Filtre les paiements par statut
-   * @param {Array} paiements - Liste des paiements
+   * @param {Array<PaiementDTO>} paiements - Liste des paiements
    * @param {string} statut - Statut (PAYE, EN_ATTENTE, EN_RETARD)
-   * @returns {Array} Paiements filtrés
+   * @returns {Array<PaiementDTO>} Paiements filtrés
    */
   filterByStatut: (paiements, statut) => {
-    if (!statut) return paiements;
+    if (!statut || statut === 'all') return paiements;
     return paiements.filter(p => p.statut === statut);
   },
 
   /**
-   * Filtre les paiements par période
-   * @param {Array} paiements - Liste des paiements
+   * Filtre les paiements par période d'échéance
+   * @param {Array<PaiementDTO>} paiements - Liste des paiements
    * @param {string} dateDebut - Date de début (YYYY-MM-DD)
    * @param {string} dateFin - Date de fin (YYYY-MM-DD)
-   * @returns {Array} Paiements filtrés
+   * @returns {Array<PaiementDTO>} Paiements filtrés
    */
   filterByPeriode: (paiements, dateDebut, dateFin) => {
     if (!dateDebut && !dateFin) return paiements;
 
     return paiements.filter(p => {
+      if (!p.dateEcheance) return false;
+      
       const dateEcheance = new Date(p.dateEcheance);
       const debut = dateDebut ? new Date(dateDebut) : new Date(0);
       const fin = dateFin ? new Date(dateFin) : new Date(9999, 11, 31);
@@ -138,10 +177,10 @@ export const paiementsService = {
 
   /**
    * Trie les paiements
-   * @param {Array} paiements - Liste des paiements
+   * @param {Array<PaiementDTO>} paiements - Liste des paiements
    * @param {string} sortBy - Champ de tri
    * @param {string} order - Ordre (asc, desc)
-   * @returns {Array} Liste triée
+   * @returns {Array<PaiementDTO>} Liste triée
    */
   sortPaiements: (paiements, sortBy = 'dateEcheance', order = 'desc') => {
     const statutOrder = { EN_RETARD: 3, EN_ATTENTE: 2, PAYE: 1 };
@@ -151,7 +190,10 @@ export const paiementsService = {
 
       switch (sortBy) {
         case 'dateEcheance':
-          comparison = new Date(a.dateEcheance) - new Date(b.dateEcheance);
+          comparison = new Date(a.dateEcheance || 0) - new Date(b.dateEcheance || 0);
+          break;
+        case 'datePaiement':
+          comparison = new Date(a.datePaiement || 0) - new Date(b.datePaiement || 0);
           break;
         case 'montant':
           comparison = (a.montant || 0) - (b.montant || 0);
@@ -165,6 +207,9 @@ export const paiementsService = {
         case 'proprietaireNom':
           comparison = (a.proprietaireNom || '').localeCompare(b.proprietaireNom || '');
           break;
+        case 'bienRef':
+          comparison = (a.bienRef || '').localeCompare(b.bienRef || '');
+          break;
         default:
           comparison = 0;
       }
@@ -173,10 +218,12 @@ export const paiementsService = {
     });
   },
 
+  // ========== STATISTIQUES ==========
+
   /**
    * Calcule les statistiques des paiements
-   * @param {Array} paiements - Liste des paiements
-   * @returns {Object} Statistiques
+   * @param {Array<PaiementDTO>} paiements - Liste des paiements
+   * @returns {Object} Statistiques complètes
    */
   getStatistics: (paiements) => {
     const total = paiements.length;
@@ -196,6 +243,7 @@ export const paiementsService = {
       .reduce((sum, p) => sum + (p.montant || 0), 0);
 
     const tauxPaiement = total > 0 ? (payes / total) * 100 : 0;
+    const tauxRecouvrement = montantTotal > 0 ? (montantPaye / montantTotal) * 100 : 0;
 
     return {
       total,
@@ -207,13 +255,16 @@ export const paiementsService = {
       montantEnAttente,
       montantEnRetard,
       tauxPaiement,
+      tauxRecouvrement,
     };
   },
 
+  // ========== UTILITAIRES ==========
+
   /**
-   * Obtient la configuration de couleur selon le statut
+   * Configuration des statuts avec couleurs et icônes
    * @param {string} statut - Statut du paiement
-   * @returns {Object} Configuration
+   * @returns {Object} Configuration de style
    */
   getStatutConfig: (statut) => {
     const config = {
@@ -222,24 +273,21 @@ export const paiementsService = {
         bgColor: 'bg-green-500/10 border-green-500/20',
         label: 'Payé',
         icon: '✓',
+        badgeVariant: 'success',
       },
       EN_ATTENTE: {
         color: 'text-yellow-700 dark:text-yellow-400',
         bgColor: 'bg-yellow-500/10 border-yellow-500/20',
         label: 'En attente',
         icon: '⏳',
+        badgeVariant: 'warning',
       },
       EN_RETARD: {
         color: 'text-red-700 dark:text-red-400',
         bgColor: 'bg-red-500/10 border-red-500/20',
         label: 'En retard',
         icon: '⚠',
-      },
-      PARTIEL: {
-        color: 'text-orange-700 dark:text-orange-400',
-        bgColor: 'bg-orange-500/10 border-orange-500/20',
-        label: 'Partiel',
-        icon: '◐',
+        badgeVariant: 'destructive',
       },
     };
 
@@ -248,28 +296,25 @@ export const paiementsService = {
 
   /**
    * Vérifie si un paiement est en retard
-   * @param {Object} paiement - Objet paiement
+   * @param {PaiementDTO} paiement - Objet paiement
    * @returns {boolean} True si en retard
    */
   isEnRetard: (paiement) => {
-    if (paiement.statut === 'PAYE') return false;
-    
-    const dateEcheance = new Date(paiement.dateEcheance);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    return dateEcheance < today;
+    return paiement.statut === 'EN_RETARD';
   },
 
   /**
    * Calcule le nombre de jours de retard
-   * @param {string} dateEcheance - Date d'échéance
+   * @param {string} dateEcheance - Date d'échéance (ISO string)
    * @returns {number} Nombre de jours de retard (0 si pas de retard)
    */
   getJoursRetard: (dateEcheance) => {
+    if (!dateEcheance) return 0;
+    
     const echeance = new Date(dateEcheance);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    echeance.setHours(0, 0, 0, 0);
     
     if (echeance >= today) return 0;
     
@@ -284,60 +329,120 @@ export const paiementsService = {
    * @returns {string} Montant formaté
    */
   formatMontant: (montant) => {
-    if (!montant && montant !== 0) return 'N/A';
+    if (montant === null || montant === undefined) return 'N/A';
     return new Intl.NumberFormat('fr-FR', {
       style: 'decimal',
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      maximumFractionDigits: 2,
     }).format(montant) + ' FCFA';
   },
 
   /**
-   * Formate une date
-   * @param {string} date - Date ISO
+   * Formate une date ISO en format français
+   * @param {string} date - Date ISO (YYYY-MM-DD)
    * @returns {string} Date formatée
    */
   formatDate: (date) => {
-    if (!date) return '';
-    return new Date(date).toLocaleDateString('fr-FR', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    if (!date) return 'N/A';
+    try {
+      return new Date(date).toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+    } catch (error) {
+      return 'Date invalide';
+    }
+  },
+
+  /**
+   * Formate une date et heure complète
+   * @param {string} dateTime - DateTime ISO
+   * @returns {string} Date et heure formatées
+   */
+  formatDateTime: (dateTime) => {
+    if (!dateTime) return 'N/A';
+    try {
+      return new Date(dateTime).toLocaleString('fr-FR', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return 'Date invalide';
+    }
   },
 
   /**
    * Génère un message de relance par défaut
-   * @param {Object} paiement - Objet paiement
+   * @param {PaiementDTO} paiement - Objet paiement
    * @returns {string} Message de relance
    */
   genererMessageRelance: (paiement) => {
     const joursRetard = paiementsService.getJoursRetard(paiement.dateEcheance);
     const montant = paiementsService.formatMontant(paiement.montant);
+    const dateEcheance = paiementsService.formatDate(paiement.dateEcheance);
 
     if (paiement.statut === 'EN_RETARD') {
-      return `Bonjour ${paiement.nomLocataire},\n\nNous vous rappelons que votre loyer pour le bien ${paiement.bienRef} d'un montant de ${montant} est en retard de ${joursRetard} jour(s).\n\nDate d'échéance : ${paiementsService.formatDate(paiement.dateEcheance)}\n\nMerci de régulariser votre situation dans les plus brefs délais.\n\nCordialement,\nL'équipe de gestion`;
+      return `Bonjour ${paiement.nomLocataire},
+
+Nous vous rappelons que votre loyer pour le bien ${paiement.bienRef} d'un montant de ${montant} est en retard de ${joursRetard} jour${joursRetard > 1 ? 's' : ''}.
+
+Date d'échéance : ${dateEcheance}
+
+Merci de régulariser votre situation dans les plus brefs délais.
+
+Cordialement,
+L'équipe de gestion`;
     }
 
-    return `Bonjour ${paiement.nomLocataire},\n\nNous vous rappelons que votre loyer pour le bien ${paiement.bienRef} d'un montant de ${montant} arrive à échéance le ${paiementsService.formatDate(paiement.dateEcheance)}.\n\nMerci de procéder au paiement avant cette date.\n\nCordialement,\nL'équipe de gestion`;
+    return `Bonjour ${paiement.nomLocataire},
+
+Nous vous rappelons que votre loyer pour le bien ${paiement.bienRef} d'un montant de ${montant} arrive à échéance le ${dateEcheance}.
+
+Merci de procéder au paiement avant cette date.
+
+Cordialement,
+L'équipe de gestion`;
   },
 
   /**
    * Exporte les paiements en CSV
-   * @param {Array} paiements - Liste des paiements
+   * @param {Array<PaiementDTO>} paiements - Liste des paiements
    * @returns {string} Contenu CSV
    */
   exportToCSV: (paiements) => {
-    const headers = 'ID,Locataire,Bien,Propriétaire,Montant,Échéance,Statut\n';
+    const headers = 'ID;Locataire;Bien;Propriétaire;Montant;Échéance;Date Paiement;Statut;Mode Paiement;Référence\n';
     const rows = paiements.map(p =>
-      `${p.id},${p.nomLocataire},${p.bienRef},${p.proprietaireNom},${p.montant},${p.dateEcheance},${p.statut}`
+      `${p.id};${p.nomLocataire || ''};${p.bienRef || ''};${p.proprietaireNom || ''};${p.montant || 0};${p.dateEcheance || ''};${p.datePaiement || ''};${p.statut || ''};${p.modePaiement || ''};${p.refTrans || ''}`
     ).join('\n');
 
     return headers + rows;
   },
 
   /**
-   * Types de relance disponibles
+   * Télécharge le CSV des paiements
+   * @param {Array<PaiementDTO>} paiements - Liste des paiements
+   * @param {string} filename - Nom du fichier
+   */
+  downloadCSV: (paiements, filename = 'paiements.csv') => {
+    const csv = paiementsService.exportToCSV(paiements);
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  },
+
+  /**
+   * Types de relance disponibles (doit correspondre au backend)
    */
   TYPE_RELANCE: {
     EMAIL: 'EMAIL',
@@ -345,4 +450,17 @@ export const paiementsService = {
     COURRIER: 'COURRIER',
     TELEPHONE: 'TELEPHONE',
   },
+
+  /**
+   * Modes de paiement disponibles
+   */
+  MODE_PAIEMENT: {
+    ESPECES: 'ESPECES',
+    VIREMENT: 'VIREMENT',
+    CHEQUE: 'CHEQUE',
+    CARTE: 'CARTE',
+    MOBILE_MONEY: 'MOBILE_MONEY',
+  },
 };
+
+export default paiementsService;

@@ -6,13 +6,14 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "../../../components/Dialog";
 import { Button } from "../../../components/Button";
 import { Input } from "../../../components/Input";
 import { Label } from "../../../components/Label";
 import { Separator } from "../../../components/Separator";
 import { Mail, Lock, User, Eye, EyeOff, AlertCircle, ShieldAlert, Clock } from "lucide-react";
-import { useAuth } from "../../../contexts/Authcontext";
+import { useAuth } from "../../../contexts/AuthContext";
 
 export const AuthDialog = ({
   open,
@@ -235,11 +236,12 @@ export const AuthDialog = ({
             <DialogTitle className="text-2xl font-bold text-center">
               {activeTab === "login" ? "Bienvenue !" : "Rejoignez-nous"}
             </DialogTitle>
-            <p className="text-center text-muted-foreground text-sm mt-2">
+
+            <DialogDescription className="text-center text-muted-foreground text-sm mt-2">
               {activeTab === "login"
                 ? "Connectez-vous pour accéder à votre espace"
                 : "Créez votre compte en quelques secondes"}
-            </p>
+            </DialogDescription>
           </DialogHeader>
 
           {/* Message d'erreur amélioré */}

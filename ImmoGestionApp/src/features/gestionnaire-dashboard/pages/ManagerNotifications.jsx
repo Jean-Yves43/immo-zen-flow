@@ -1,41 +1,60 @@
 // src/features/gestionnaire-dashboard/pages/ManagerNotifications.jsx
-import { useState } from "react";
-import { Bell, Check, Trash2, CreditCard, Wrench, Users, Home } from "lucide-react";
+import { Bell, Check, Trash2, CreditCard, Wrench, Users, Home, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "../../../components/Card";
 import { Button } from "../../../components/Button";
 import { Badge } from "../../../components/Badge";
 import { KpiCard } from "../components/KpiCard";
 import { PageHeader } from "../components/PageHeader";
-import { initialNotifications } from "../api/manager";
+import { useNotifications } from "../../../hooks/useNotifications";
+import { useAuth } from "../../../contexts/AuthContext"; // ← CORRECTION: Authcontext avec 'c' minuscule
 
 const iconMap = {
-  payment: CreditCard,
-  maintenance: Wrench,
-  owner: Users,
-  property: Home,
+  PAIEMENT: CreditCard,
+  MAINTENANCE: Wrench,
+  PROPRIETAIRE: Users,
+  BIEN: Home,
+  LOCATION: Home,
+  EXPULSION: AlertTriangle,
 };
 
 export default function ManagerNotifications() {
-  const [notificationsList, setNotificationsList] = useState(initialNotifications);
-  
-  const unreadCount = notificationsList.filter(n => !n.read).length;
+  const { user } = useAuth();
+  const { 
+    notifications, 
+    unreadCount, 
+    loading, 
+    error,
+    markAsRead, 
+    markAllAsRead, 
+    deleteNotification 
+  } = useNotifications(user?.userId); // ← Utiliser user?.userId
 
   const getIcon = (type) => {
     return iconMap[type] || Bell;
   };
 
-  const markAsRead = (id) => {
-    setNotificationsList(prev => 
-      prev.map(n => n.id === id ? { ...n, read: true } : n)
-    );
+  const handleMarkAsRead = async (id) => {
+    try {
+      await markAsRead(id);
+    } catch (error) {
+      console.error('Erreur lors du marquage de la notification:', error);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotificationsList(prev => prev.map(n => ({ ...n, read: true })));
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsRead();
+    } catch (error) {
+      console.error('Erreur lors du marquage de toutes les notifications:', error);
+    }
   };
 
-  const deleteNotification = (id) => {
-    setNotificationsList(prev => prev.filter(n => n.id !== id));
+  const handleDeleteNotification = async (id) => {
+    try {
+      await deleteNotification(id);
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la notification:', error);
+    }
   };
 
   const kpiData = [
@@ -46,27 +65,51 @@ export default function ManagerNotifications() {
     },
     { 
       title: "Urgentes", 
-      value: notificationsList.filter(n => n.urgent).length,
+      value: notifications.filter(n => n.urgente).length,
       icon: Bell,
       valueColor: "text-destructive"
     },
     { 
       title: "Total", 
-      value: notificationsList.length,
+      value: notifications.length,
       icon: Bell
     },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Chargement des notifications...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <p className="text-destructive">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
         title="Notifications"
-        description={`${unreadCount} non lues`}
+        description={`${unreadCount} non lue${unreadCount > 1 ? 's' : ''}`}
         actions={
-          <Button variant="outline" onClick={markAllAsRead}>
-            <Check className="mr-2 h-4 w-4" />
-            Tout marquer comme lu
-          </Button>
+          unreadCount > 0 && (
+            <Button variant="outline" onClick={handleMarkAllAsRead}>
+              <Check className="mr-2 h-4 w-4" />
+              Tout marquer comme lu
+            </Button>
+          )
         }
       />
 
@@ -76,67 +119,81 @@ export default function ManagerNotifications() {
         ))}
       </div>
 
-      <div className="space-y-3">
-        {notificationsList.map((notification) => {
-          const Icon = getIcon(notification.type);
-          
-          return (
-            <Card 
-              key={notification.id} 
-              className={`hover-lift ${!notification.read ? "bg-secondary/5 border-secondary/20" : ""}`}
-            >
-              <CardContent className="pt-4">
-                <div className="flex items-start gap-4">
-                  <div className={`p-2 rounded-lg ${
-                    notification.urgent 
-                      ? "bg-destructive/10 text-destructive" 
-                      : "bg-muted text-muted-foreground"
-                  }`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-medium">{notification.title}</h3>
-                      {notification.urgent && (
-                        <Badge variant="destructive">Urgent</Badge>
-                      )}
-                      {!notification.read && (
-                        <Badge className="bg-secondary text-secondary-foreground">
-                          Nouveau
-                        </Badge>
-                      )}
+      {notifications.length === 0 ? (
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">Aucune notification pour le moment</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {notifications.map((notification) => {
+            const Icon = getIcon(notification.type);
+            
+            return (
+              <Card 
+                key={notification.id} 
+                className={`hover-lift ${!notification.lue ? "bg-secondary/5 border-secondary/20" : ""}`}
+              >
+                <CardContent className="pt-4">
+                  <div className="flex items-start gap-4">
+                    <div className={`p-2 rounded-lg ${
+                      notification.urgente 
+                        ? "bg-destructive/10 text-destructive" 
+                        : "bg-muted text-muted-foreground"
+                    }`}>
+                      <Icon className="h-5 w-5" />
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {notification.message}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {notification.time}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    {!notification.read && (
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-medium">{notification.titre}</h3>
+                        {notification.urgente && (
+                          <Badge variant="destructive">Urgent</Badge>
+                        )}
+                        {!notification.lue && (
+                          <Badge className="bg-secondary text-secondary-foreground">
+                            Nouveau
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="text-xs">
+                          {notification.type}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {notification.message}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {notification.tempsRelatif}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      {!notification.lue && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleMarkAsRead(notification.id)}
+                          title="Marquer comme lu"
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        onClick={() => markAsRead(notification.id)}
+                        onClick={() => handleDeleteNotification(notification.id)}
+                        title="Supprimer"
                       >
-                        <Check className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
-                    )}
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => deleteNotification(notification.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
