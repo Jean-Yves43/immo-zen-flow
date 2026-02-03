@@ -25,6 +25,17 @@ import TenantProfil from "./pages/tenant/TenantProfil";
 // Admin pages
 import { AdminLayout } from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+
+// Admin2 pages
+import { Admin2Layout } from "./layouts/Admin2Layout";
+import Admin2Dashboard from "./pages/admin2/Admin2Dashboard";
+import Admin2Users from "./pages/admin2/Admin2Users";
+import Admin2Properties from "./pages/admin2/Admin2Properties";
+import Admin2Reports from "./pages/admin2/Admin2Reports";
+import Admin2Metrics from "./pages/admin2/Admin2Metrics";
+import Admin2Payments from "./pages/admin2/Admin2Payments";
+import Admin2Settings from "./pages/admin2/Admin2Settings";
+import Admin2Notifications from "./pages/admin2/Admin2Notifications";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminProperties from "./pages/admin/AdminProperties";
 import AdminManagersOverview from "./pages/admin/AdminManagersOverview";
@@ -94,7 +105,33 @@ const App = () => (
             <Route path="managers-overview" element={<AdminManagersOverview />} />
             <Route path="statistics" element={<AdminStatistics />} />
             <Route path="notifications" element={<AdminNotifications />} />
-            <Route path="settings" element={<AdminSettings />} />
+          <Route path="settings" element={<AdminSettings />} />
+          </Route>
+
+          {/* Admin2 Dashboard Routes */}
+          <Route path="/admin2" element={<Admin2Layout />}>
+            <Route index element={<Admin2Dashboard />} />
+            <Route path="users" element={<Admin2Users />} />
+            <Route path="users/managers" element={<Admin2Users />} />
+            <Route path="users/owners" element={<Admin2Users />} />
+            <Route path="users/tenants" element={<Admin2Users />} />
+            <Route path="users/standard" element={<Admin2Users />} />
+            <Route path="users/create" element={<Admin2Users />} />
+            <Route path="properties" element={<Admin2Properties />} />
+            <Route path="properties/create" element={<Admin2Properties />} />
+            <Route path="payments" element={<Admin2Payments />} />
+            <Route path="payments/methods" element={<Admin2Payments />} />
+            <Route path="payments/api" element={<Admin2Payments />} />
+            <Route path="reports" element={<Admin2Reports />} />
+            <Route path="reports/monthly" element={<Admin2Reports />} />
+            <Route path="reports/yearly" element={<Admin2Reports />} />
+            <Route path="metrics" element={<Admin2Metrics />} />
+            <Route path="notifications" element={<Admin2Notifications />} />
+            <Route path="settings" element={<Admin2Settings />} />
+            <Route path="settings/notifications" element={<Admin2Settings />} />
+            <Route path="settings/ads" element={<Admin2Settings />} />
+            <Route path="settings/auth" element={<Admin2Settings />} />
+            <Route path="settings/geo" element={<Admin2Settings />} />
           </Route>
 
           {/* Owner Dashboard Routes */}
