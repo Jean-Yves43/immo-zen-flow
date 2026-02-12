@@ -1,46 +1,22 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Plus,
-  Search,
-  MapPin,
-  Bed,
-  Bath,
-  Square,
-  Euro,
-  Edit,
-  Trash2,
-  Eye,
-  MoreVertical,
-  Home,
-  Building,
-  Castle,
-  Warehouse,
-  Building2,
+  Plus, Search, MapPin, Bed, Bath, Square, Edit, Trash2, Eye, MoreVertical,
+  Home, Building, Castle, Warehouse, Building2,
 } from "lucide-react";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
@@ -85,6 +61,8 @@ const statusConfig = {
 const emptyForm = { title: "", address: "", type: "", status: "", price: "", bedrooms: "", bathrooms: "", area: "", owner: "", description: "" };
 
 export default function Admin2Properties() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [properties, setProperties] = useState<Property[]>(initialProperties);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
@@ -97,6 +75,12 @@ export default function Admin2Properties() {
   const [viewProp, setViewProp] = useState<Property | null>(null);
   const [deleteProp, setDeleteProp] = useState<Property | null>(null);
 
+  const isCreateRoute = location.pathname === "/admin2/properties/create";
+
+  useEffect(() => {
+    if (isCreateRoute) setIsCreateOpen(true);
+  }, [isCreateRoute]);
+
   const filteredProperties = properties.filter((p) => {
     const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase()) || p.address.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = selectedType === "all" || p.type === selectedType;
@@ -104,22 +88,18 @@ export default function Admin2Properties() {
   });
 
   const handleCreate = () => {
-    if (!form.title || !form.address || !form.type || !form.price) {
-      toast.error("Veuillez remplir tous les champs obligatoires");
-      return;
-    }
+    if (!form.title || !form.address || !form.type || !form.price) { toast.error("Veuillez remplir tous les champs obligatoires"); return; }
     const newProp: Property = {
       id: Math.max(...properties.map(p => p.id), 0) + 1,
-      title: form.title, address: form.address,
-      type: form.type as Property["type"],
+      title: form.title, address: form.address, type: form.type as Property["type"],
       status: (form.status || "available") as Property["status"],
       price: parseFloat(form.price), bedrooms: parseInt(form.bedrooms) || 0,
       bathrooms: parseInt(form.bathrooms) || 0, area: parseInt(form.area) || 0,
       owner: form.owner, description: form.description, image: "/placeholder.svg",
     };
     setProperties(prev => [...prev, newProp]);
-    setForm(emptyForm);
-    setIsCreateOpen(false);
+    setForm(emptyForm); setIsCreateOpen(false);
+    if (isCreateRoute) navigate("/admin2/properties");
     toast.success(`Propriété "${newProp.title}" ajoutée`);
   };
 
@@ -131,85 +111,36 @@ export default function Admin2Properties() {
 
   const handleSaveEdit = () => {
     if (!editProp) return;
-    setProperties(prev => prev.map(p => p.id === editProp.id ? {
-      ...p, title: form.title, address: form.address, type: form.type as Property["type"],
-      status: form.status as Property["status"], price: parseFloat(form.price),
-      bedrooms: parseInt(form.bedrooms) || 0, bathrooms: parseInt(form.bathrooms) || 0,
-      area: parseInt(form.area) || 0, owner: form.owner, description: form.description,
-    } : p));
-    setIsEditOpen(false);
-    setEditProp(null);
-    setForm(emptyForm);
+    setProperties(prev => prev.map(p => p.id === editProp.id ? { ...p, title: form.title, address: form.address, type: form.type as Property["type"], status: form.status as Property["status"], price: parseFloat(form.price), bedrooms: parseInt(form.bedrooms) || 0, bathrooms: parseInt(form.bathrooms) || 0, area: parseInt(form.area) || 0, owner: form.owner, description: form.description } : p));
+    setIsEditOpen(false); setEditProp(null); setForm(emptyForm);
     toast.success("Propriété modifiée avec succès");
   };
 
   const handleDelete = () => {
     if (!deleteProp) return;
     setProperties(prev => prev.filter(p => p.id !== deleteProp.id));
-    setIsDeleteOpen(false);
-    toast.success(`Propriété "${deleteProp.title}" supprimée`);
-    setDeleteProp(null);
+    setIsDeleteOpen(false); toast.success(`Propriété "${deleteProp.title}" supprimée`); setDeleteProp(null);
   };
 
   const renderForm = (onSubmit: () => void, submitLabel: string, onCancel: () => void) => (
     <>
       <div className="grid grid-cols-2 gap-4 mt-4">
-        <div className="col-span-2 space-y-2">
-          <label className="text-sm text-slate-400">Titre *</label>
-          <Input className="bg-slate-800 border-slate-700" placeholder="Appartement Moderne" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
-        </div>
-        <div className="col-span-2 space-y-2">
-          <label className="text-sm text-slate-400">Adresse *</label>
-          <Input className="bg-slate-800 border-slate-700" placeholder="15 Rue de la Paix, Paris" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
-        </div>
+        <div className="col-span-2 space-y-2"><label className="text-sm text-slate-400">Titre *</label><Input className="bg-slate-800 border-slate-700" placeholder="Appartement Moderne" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></div>
+        <div className="col-span-2 space-y-2"><label className="text-sm text-slate-400">Adresse *</label><Input className="bg-slate-800 border-slate-700" placeholder="15 Rue de la Paix, Paris" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
         <div className="space-y-2">
           <label className="text-sm text-slate-400">Type *</label>
-          <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
-            <SelectTrigger className="bg-slate-800 border-slate-700"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700">
-              <SelectItem value="apartment">Appartement</SelectItem>
-              <SelectItem value="house">Maison</SelectItem>
-              <SelectItem value="villa">Villa</SelectItem>
-              <SelectItem value="commercial">Commercial</SelectItem>
-            </SelectContent>
-          </Select>
+          <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}><SelectTrigger className="bg-slate-800 border-slate-700"><SelectValue placeholder="Sélectionner" /></SelectTrigger><SelectContent className="bg-slate-800 border-slate-700"><SelectItem value="apartment">Appartement</SelectItem><SelectItem value="house">Maison</SelectItem><SelectItem value="villa">Villa</SelectItem><SelectItem value="commercial">Commercial</SelectItem></SelectContent></Select>
         </div>
         <div className="space-y-2">
           <label className="text-sm text-slate-400">Statut</label>
-          <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
-            <SelectTrigger className="bg-slate-800 border-slate-700"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700">
-              <SelectItem value="available">Disponible</SelectItem>
-              <SelectItem value="rented">Loué</SelectItem>
-              <SelectItem value="sale">En vente</SelectItem>
-              <SelectItem value="maintenance">Maintenance</SelectItem>
-            </SelectContent>
-          </Select>
+          <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}><SelectTrigger className="bg-slate-800 border-slate-700"><SelectValue placeholder="Sélectionner" /></SelectTrigger><SelectContent className="bg-slate-800 border-slate-700"><SelectItem value="available">Disponible</SelectItem><SelectItem value="rented">Loué</SelectItem><SelectItem value="sale">En vente</SelectItem><SelectItem value="maintenance">Maintenance</SelectItem></SelectContent></Select>
         </div>
-        <div className="space-y-2">
-          <label className="text-sm text-slate-400">Prix (€) *</label>
-          <Input className="bg-slate-800 border-slate-700" type="number" placeholder="1500" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm text-slate-400">Surface (m²)</label>
-          <Input className="bg-slate-800 border-slate-700" type="number" placeholder="65" value={form.area} onChange={e => setForm(f => ({ ...f, area: e.target.value }))} />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm text-slate-400">Chambres</label>
-          <Input className="bg-slate-800 border-slate-700" type="number" placeholder="2" value={form.bedrooms} onChange={e => setForm(f => ({ ...f, bedrooms: e.target.value }))} />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm text-slate-400">Salles de bain</label>
-          <Input className="bg-slate-800 border-slate-700" type="number" placeholder="1" value={form.bathrooms} onChange={e => setForm(f => ({ ...f, bathrooms: e.target.value }))} />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm text-slate-400">Propriétaire</label>
-          <Input className="bg-slate-800 border-slate-700" placeholder="Jean Dupont" value={form.owner} onChange={e => setForm(f => ({ ...f, owner: e.target.value }))} />
-        </div>
-        <div className="col-span-2 space-y-2">
-          <label className="text-sm text-slate-400">Description</label>
-          <Textarea className="bg-slate-800 border-slate-700 min-h-24" placeholder="Description détaillée..." value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
-        </div>
+        <div className="space-y-2"><label className="text-sm text-slate-400">Prix (€) *</label><Input className="bg-slate-800 border-slate-700" type="number" placeholder="1500" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} /></div>
+        <div className="space-y-2"><label className="text-sm text-slate-400">Surface (m²)</label><Input className="bg-slate-800 border-slate-700" type="number" placeholder="65" value={form.area} onChange={e => setForm(f => ({ ...f, area: e.target.value }))} /></div>
+        <div className="space-y-2"><label className="text-sm text-slate-400">Chambres</label><Input className="bg-slate-800 border-slate-700" type="number" placeholder="2" value={form.bedrooms} onChange={e => setForm(f => ({ ...f, bedrooms: e.target.value }))} /></div>
+        <div className="space-y-2"><label className="text-sm text-slate-400">Salles de bain</label><Input className="bg-slate-800 border-slate-700" type="number" placeholder="1" value={form.bathrooms} onChange={e => setForm(f => ({ ...f, bathrooms: e.target.value }))} /></div>
+        <div className="space-y-2"><label className="text-sm text-slate-400">Propriétaire</label><Input className="bg-slate-800 border-slate-700" placeholder="Jean Dupont" value={form.owner} onChange={e => setForm(f => ({ ...f, owner: e.target.value }))} /></div>
+        <div className="col-span-2 space-y-2"><label className="text-sm text-slate-400">Description</label><Textarea className="bg-slate-800 border-slate-700 min-h-24" placeholder="Description détaillée..." value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
       </div>
       <div className="flex justify-end gap-3 mt-6">
         <Button variant="outline" onClick={onCancel} className="border-slate-700 text-slate-300">Annuler</Button>
@@ -225,18 +156,19 @@ export default function Admin2Properties() {
           <h1 className="text-3xl font-bold text-white">Gestion des Propriétés</h1>
           <p className="text-slate-400 mt-1">{properties.length} propriétés au total</p>
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={o => { setIsCreateOpen(o); if (!o) setForm(emptyForm); }}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white gap-2"><Plus className="w-4 h-4" />Ajouter une propriété</Button>
-          </DialogTrigger>
-          <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle className="text-xl">Ajouter une nouvelle propriété</DialogTitle></DialogHeader>
-            {renderForm(handleCreate, "Ajouter la propriété", () => { setIsCreateOpen(false); setForm(emptyForm); })}
-          </DialogContent>
-        </Dialog>
+        <Button className="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white gap-2" onClick={() => { setForm(emptyForm); setIsCreateOpen(true); }}>
+          <Plus className="w-4 h-4" />Ajouter une propriété
+        </Button>
       </div>
 
-      {/* Edit Dialog */}
+      {/* Create Dialog */}
+      <Dialog open={isCreateOpen} onOpenChange={o => { setIsCreateOpen(o); if (!o) { setForm(emptyForm); if (isCreateRoute) navigate("/admin2/properties"); } }}>
+        <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="text-xl">Ajouter une nouvelle propriété</DialogTitle></DialogHeader>
+          {renderForm(handleCreate, "Ajouter la propriété", () => { setIsCreateOpen(false); setForm(emptyForm); if (isCreateRoute) navigate("/admin2/properties"); })}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isEditOpen} onOpenChange={o => { setIsEditOpen(o); if (!o) { setEditProp(null); setForm(emptyForm); } }}>
         <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="text-xl">Modifier la propriété</DialogTitle></DialogHeader>
@@ -244,7 +176,6 @@ export default function Admin2Properties() {
         </DialogContent>
       </Dialog>
 
-      {/* View Dialog */}
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
         <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-lg">
           <DialogHeader><DialogTitle className="text-xl">{viewProp?.title}</DialogTitle></DialogHeader>
@@ -268,7 +199,6 @@ export default function Admin2Properties() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-md">
           <DialogHeader><DialogTitle className="text-xl">Confirmer la suppression</DialogTitle></DialogHeader>
@@ -325,33 +255,29 @@ export default function Admin2Properties() {
                 <Badge className={`absolute top-3 left-3 ${status.color}`}>{status.label}</Badge>
                 <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild><Button variant="secondary" size="icon" className="bg-slate-900/80 hover:bg-slate-900"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="bg-slate-900/80 text-white"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent className="bg-slate-800 border-slate-700">
-                      <DropdownMenuItem className="text-slate-300" onClick={() => { setViewProp(property); setIsViewOpen(true); }}><Eye className="w-4 h-4 mr-2" /> Voir</DropdownMenuItem>
-                      <DropdownMenuItem className="text-slate-300" onClick={() => handleEdit(property)}><Edit className="w-4 h-4 mr-2" /> Modifier</DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-400" onClick={() => { setDeleteProp(property); setIsDeleteOpen(true); }}><Trash2 className="w-4 h-4 mr-2" /> Supprimer</DropdownMenuItem>
+                      <DropdownMenuItem className="text-slate-300" onClick={() => { setViewProp(property); setIsViewOpen(true); }}><Eye className="w-4 h-4 mr-2" />Voir</DropdownMenuItem>
+                      <DropdownMenuItem className="text-slate-300" onClick={() => handleEdit(property)}><Edit className="w-4 h-4 mr-2" />Modifier</DropdownMenuItem>
+                      <DropdownMenuItem className="text-red-400" onClick={() => { setDeleteProp(property); setIsDeleteOpen(true); }}><Trash2 className="w-4 h-4 mr-2" />Supprimer</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
               </div>
               <CardContent className="p-5">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className={`p-1.5 rounded-lg bg-gradient-to-br ${type.color}`}><type.icon className="w-3.5 h-3.5 text-white" /></div>
-                  <span className="text-xs text-slate-400">{type.label}</span>
+                  <Badge className="bg-slate-700 text-slate-300 text-xs">{type.label}</Badge>
                 </div>
-                <h3 className="font-semibold text-white text-lg mb-1">{property.title}</h3>
-                <div className="flex items-center gap-1 text-slate-400 text-sm mb-4"><MapPin className="w-4 h-4" />{property.address}</div>
+                <h3 className="font-semibold text-white mb-2">{property.title}</h3>
+                <p className="text-sm text-slate-400 flex items-center gap-1 mb-4"><MapPin className="w-4 h-4" />{property.address}</p>
                 <div className="flex items-center gap-4 text-sm text-slate-400 mb-4">
-                  <span className="flex items-center gap-1"><Bed className="w-4 h-4" /> {property.bedrooms}</span>
-                  <span className="flex items-center gap-1"><Bath className="w-4 h-4" /> {property.bathrooms}</span>
-                  <span className="flex items-center gap-1"><Square className="w-4 h-4" /> {property.area}m²</span>
+                  <span className="flex items-center gap-1"><Bed className="w-4 h-4" />{property.bedrooms}</span>
+                  <span className="flex items-center gap-1"><Bath className="w-4 h-4" />{property.bathrooms}</span>
+                  <span className="flex items-center gap-1"><Square className="w-4 h-4" />{property.area}m²</span>
                 </div>
                 <div className="flex items-center justify-between pt-4 border-t border-slate-700">
+                  <span className="text-emerald-400 font-bold text-lg">€{property.price.toLocaleString()}{property.status !== "sale" && "/mois"}</span>
                   <span className="text-sm text-slate-400">{property.owner}</span>
-                  <span className="text-xl font-bold text-emerald-400 flex items-center">
-                    <Euro className="w-4 h-4" />{property.price.toLocaleString()}
-                    {property.status !== "sale" && <span className="text-sm text-slate-400">/mois</span>}
-                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -360,7 +286,10 @@ export default function Admin2Properties() {
       </div>
 
       {filteredProperties.length === 0 && (
-        <div className="text-center py-12"><Building2 className="w-12 h-12 text-slate-600 mx-auto mb-4" /><p className="text-slate-400">Aucune propriété trouvée</p></div>
+        <div className="text-center py-12">
+          <Building2 className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+          <p className="text-slate-400">Aucune propriété trouvée</p>
+        </div>
       )}
     </div>
   );
